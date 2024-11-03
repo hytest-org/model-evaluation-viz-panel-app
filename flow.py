@@ -24,32 +24,58 @@ flow_plot_opts = dict(
 class FlowPlot(param.Parameterized):
     """Instantiate flow map """
     flow_data = param.DataFrame(precedence=-1)
-    site_ids = param.ListSelector(default=[], label = "select site ids")
+    site_id = param.String(default='', label = "Selected Site ID")
     start_date = param.Date(default =  dt.datetime(2020,1,1) ,label = "Start Date")
     end_date = param.Date(default =  dt.datetime(2020,1,10),label = "End Date")
 
-    #same logic
-    def __init__(self, **params):
+    def __init__(self, **params)-> None:
+        '''
+        Initializes the class with given parameters.
+
+        Args:
+            **params: Keyword arguments for parameter initialization.
+        '''
         super().__init__(**params)
 
-    #Destroy for loop just do a single ID
-    def getflow(self, site_ids, dates):
+    def getflow(self, site_id, dates)-> any:
+        '''
+        Fetches the streamflow data for a given site ID and date range.
+
+        Args:
+            site_id (str): The site ID for which to fetch streamflow data.
+            dates (Tuple[str, str]): A tuple containing the start and end dates.
+
+        Returns:
+            Any: The streamflow data retrieved from NWIS.
+        '''
         nwis = NWIS()
-        data = nwis.get_streamflow(site_ids, dates)
+        data = nwis.get_streamflow(site_id, dates)
         return data
     
-    @param.depends("site_ids", "start_date", "end_date", watch = True)
-    def update_flow_data(self):
+    @param.depends("site_id", "start_date", "end_date", watch = True)
+    def update_flow_data(self) -> None:
+        '''
+        Updates flow data when site ID or date range changes.
+
+        Returns:
+            None: This method updates the flow_data attribute but does not return a value.
+        '''
         start_date = self.start_date
         end_date = self.end_date
         dates = (start_date, end_date)
-        id = self.site_ids[0]
+        id = self.site_id
         dates = (start_date, end_date)
         self.flow_data = self.getflow(id, dates)
 
     
     @param.depends("flow_data", watch = True)
-    def plot_streamflow(self):
+    def plot_streamflow(self)-> hv.Overlay:
+        '''
+        Plots the streamflow data if available.
+
+        Returns:
+            hv.Overlay: A HoloViews overlay containing the streamflow curves.
+        '''
         if self.flow_data is None or self.flow_data.empty:
             return hv.Curve([]).opts(**flow_plot_opts)
 
@@ -61,6 +87,12 @@ class FlowPlot(param.Parameterized):
         return hv.Overlay(curves).opts(legend_position='right')
 
     @param.depends("plot_streamflow")
-    def view(self):
+    def view(self) -> pn.pane.HoloViews:
+        '''
+        Returns a Panel that displays the streamflow plot.
+
+        Returns:
+            pn.pane.HoloViews: A Panel object containing the streamflow plot.
+        '''
         return pn.pane.HoloViews(self.plot_streamflow(), sizing_mode = 'stretch_width')
     
