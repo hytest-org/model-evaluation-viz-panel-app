@@ -42,7 +42,8 @@ class Map(param.Parameterized):
 
     @param.depends("state_select")
     def display_states(self) -> gv.Polygons:
-        '''Display map of selected states.
+        '''
+        Display map of selected states.
 
         Returns:
             gv.Polygons: HoloViews Polygons object of the selected states.
@@ -55,44 +56,47 @@ class Map(param.Parameterized):
 
     @param.depends("basemap_select")
     def display_basemap(self) -> gv.TileSource:
-            '''Display the selected basemap.
+        '''
+        Display the selected basemap.
 
-            Returns:
-                gv.TileSource: The selected basemap from tile sources.
-            '''
-            return gv.tile_sources.tile_sources[self.basemap_select]
+        Returns:
+            gv.TileSource: The selected basemap from tile sources.
+        '''
+        return gv.tile_sources.tile_sources[self.basemap_select]
     
     @param.depends("state_select", "streamgage_type_filter", "streamgage_id_string", watch=True)
     def display_streamgages(self) -> gv.Points:
-            '''Display streamgage points based on the selected filters.
+        '''
+        Display streamgage points based on the selected filters.
 
-            Returns:
-                gv.Points: HoloViews Points object representing streamgages.
-            '''
-            # Give precedence to streamgage_id_input search
-            if len(self.streamgage_id_string) > 0:
-                id_list = [pid.strip() for pid in self.streamgage_id_string.split(",")]
-                streamgages_to_display = self.streamgages[self.streamgages['site_no'].isin(id_list)]
+        Returns:
+            gv.Points: HoloViews Points object representing streamgages.
+        '''
+        # Give precedence to streamgage_id_input search
+        if len(self.streamgage_id_string) > 0:
+            id_list = [pid.strip() for pid in self.streamgage_id_string.split(",")]
+            streamgages_to_display = self.streamgages[self.streamgages['site_no'].isin(id_list)]
+        else:
+            column = self.streamgage_type_filter
+            if column != "all":
+                streamgages_to_display = self.streamgages[self.streamgages[column] == 1]
             else:
-                column = self.streamgage_type_filter
-                if column != "all":
-                    streamgages_to_display = self.streamgages[self.streamgages[column] == 1]
-                else:
-                    streamgages_to_display = self.streamgages
+                streamgages_to_display = self.streamgages
 
-                if len(self.state_select) > 0:
-                    streamgages_to_display = (streamgages_to_display.clip(self.states[self.states['shapeName'].isin(self.state_select)]))
+            if len(self.state_select) > 0:
+                streamgages_to_display = (streamgages_to_display.clip(self.states[self.states['shapeName'].isin(self.state_select)]))
 
-            site_gage = gv.Points(streamgages_to_display).options(
-                cmap="Plasma",  # stand in and will be changed later
-                color="complete_yrs",  # stand in and will be changed later
-                size=5)  # stand in and will be changed later
-            self.stream.source = site_gage
-            return site_gage
+        site_gage = gv.Points(streamgages_to_display).options(
+            cmap="Plasma",  # stand in and will be changed later
+            color="complete_yrs",  # stand in and will be changed later
+            size=5)  # stand in and will be changed later
+        self.stream.source = site_gage
+        return site_gage
     
     @param.depends("display_states", "display_basemap", "display_streamgages")
     def view(self) -> pn.pane.HoloViews:
-        '''Merge map components into a display.
+        '''
+        Merge map components into a display.
 
         Returns:
             pn.pane.HoloViews: A Panel object containing the complete map view.
