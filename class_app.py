@@ -20,7 +20,17 @@ streamgages_path = "./data/streamflow_gages_v1_n5390.csv"
 ### DATA  # noqa: E266
 # read GeoJSON file
 def _get_state_data(_filepath: str) -> tuple[gpd.GeoDataFrame, list]:
-    """Read in state geographies."""
+    '''
+    Read in state geographies from a specified file path.
+
+    Args:
+        _filepath (str): The file path to the geospatial data file containing state geometries.
+
+    Returns:
+        tuple[gpd.GeoDataFrame, list]: A tuple containing:
+            - A GeoDataFrame with the state geometries, excluding specified states.
+            - A sorted list of unique state names from the GeoDataFrame.
+    '''
     # create 
     _states = gpd.read_file(_filepath)
     _states = _states[~_states['shapeName'].isin(EX_STATES)]
@@ -51,6 +61,7 @@ def _get_streamgage_data(_filepath: str) -> gpd.GeoDataFrame:
                                     crs="EPSG:4326"  # most data is exported in EPSG:4326
     )
     return filtered_gdf
+
 streamgage_data = _get_streamgage_data(streamgages_path)
 map = Map(states = states_data, streamgages = streamgage_data)
 flow = FlowPlot()
