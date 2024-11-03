@@ -33,7 +33,13 @@ def _get_state_data(_filepath: str) -> tuple[gpd.GeoDataFrame, list]:
 states_data, states_list = _get_state_data(states_path)
 
 def _get_streamgage_data(_filepath: str) -> gpd.GeoDataFrame:
-    """Reads streamflow data from a .csv and filters it based on the 'gagesII_class==ref'."""  # noqa: D401
+    '''
+    Reads streamflow data from a .csv and filters it based on the 'gagesII_class==ref'.
+    Args:
+        _filepath (str): Path to the .csv file 
+    Returns:
+        gpd.GeoDataFrame: the filtered geopandas data file
+    '''
     # read lat-long or xy data using pandas read_csv
     read_data = pd.read_csv(_filepath, dtype=dict(site_no=str, nldi=int, swim=int, gfv1d1=int))
 
@@ -48,22 +54,11 @@ def _get_streamgage_data(_filepath: str) -> gpd.GeoDataFrame:
 streamgage_data = _get_streamgage_data(streamgages_path)
 map = Map(states = states_data, streamgages = streamgage_data)
 flow = FlowPlot()
-# def show_flow_plot(event):
-#     x, y = map.stream.x, map.stream.y
-#     print(x,y)
-#     if not(pd.isna(x) or pd.isna(y)):
-#         nearest_point = streamgage_data.geometry.distance(gpd.points_from_xy([x],[y])).idxmin()
-#         site_id = streamgage_data.loc(nearest_point,['site_no'])
-#         flow.site_id = site_id
-#         print(x,y)
-# def show_flow_plot(x,y):
-#     print(x,y)
-#     return pn.pane.Str('Click at %0.3f, %0.3f' % (x, y), width=200)
 
 ### WIDGET OPTIONS  # noqa: E266
 
 # tap_map = hv.DynamicMap(show_flow_plot, streams=[map.stream])
-# flow = FlowPlot()
+flow = FlowPlot()
 # flow.plot_streamflow()
 map.param.state_select.objects = states_list
 model_eval = pn.template.MaterialTemplate(
@@ -73,8 +68,8 @@ model_eval = pn.template.MaterialTemplate(
     ],
     main=[map.view, flow.view],
 )
-
-# flow.param.site_ids.objects = ['01021480','01021470']
+print(type(flow.param.site_id))
+flow.param.site_id= '01021480'
 
 # model_eval = pn.template.FastGridTemplate(
 #     title="HyTEST Model Evaluation",
