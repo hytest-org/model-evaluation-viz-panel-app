@@ -9,6 +9,7 @@ import geoviews as gv
 import geoviews.feature as gf
 from geoviews import opts
 import holoviews as hv
+from holoviews import streams
 import httpx
 import hvplot.pandas
 import nest_asyncio 
@@ -19,7 +20,6 @@ from pygeohydro import NWIS
 import re
 import truststore
 import ssl
-
 nest_asyncio.apply()
 # create SSL context for internal intranet and read file
 # this is a method used when calling a library like httpx, urllib3, or requests directly rather than `truststore.inject_into_ssl()`
@@ -99,8 +99,6 @@ start_date = pn.widgets.DatePicker(
     value = dt.date(2001,1,1),
     start = dt.date(2001,1,1),
     end = dt.date.today(),
-
-
 )
 end_date = pn.widgets.DatePicker(
     # description = "select start date",
@@ -119,7 +117,6 @@ streamgage_input = pn.widgets.TextInput(
     name='Streamgage Site ID', 
     placeholder='Streamgage Site ID #',
     description='Enter a column delimited list e.g. 01022500, 01022502',
-    
     )
 base_map_options = {
     'OpenStreetMap': gv.tile_sources.OSM,
@@ -139,6 +136,11 @@ subset_selector = pn.widgets.MultiSelect(
     name="Select a subset",
     options=STREAMGAGE_SUBSET,
 )
+Dobs = pd.DataFrame({
+    'datetime':[''],
+     '0060_Mean':['']
+
+})
 
 def display_streamflow(ids:str) -> pd.DataFrame:
     '''
@@ -147,14 +149,18 @@ def display_streamflow(ids:str) -> pd.DataFrame:
     Parameters: string of Id's, start and end dates
     Returns: return a pandas dataframe
     '''
-    id_list = [pid.strip() for pid in ids.split(",")]
-    site_no = id_list[0]
-    dates = (start_date.value,end_date.value)
-    qobs = nwis.get_streamflow(site_no, dates)
-    return qobs 
+    if isinstance(ids, str):
+        id_list = [pid.strip() for pid in ids.split(",")]
+        site_no = id_list[0]
+        dates = (start_date.value,end_date.value)
+        qobs = nwis.get_streamflow(site_no, dates)
+        return qobs
+    return 
 # create a pn.rx() to allow Panel to link display_streamflow, and streamgage_input
 if streamgage_input.value != '':
     displayed_streamflow = pn.rx(display_streamflow)(streamgage_input)
+else:
+    displayed_streamflow = Dobs 
 
 
 def display_map(map: str) -> gv.WMTS:
@@ -167,7 +173,6 @@ def display_map(map: str) -> gv.WMTS:
     Returns:
         gv.WMTS: A Tile source type from the GeoViews library.
     '''
-
     basemap = base_map_options[map]
     return basemap
     
@@ -200,7 +205,6 @@ def display_states(state_list:list)->gv.Polygons:
 displayed_states = pn.rx(display_states)(state_selector)
 
 
-
 def enter_event(event)->None:
     '''
     Event handler function for the 'Enter' button widget.
@@ -221,6 +225,9 @@ def enter_event(event)->None:
         streamgage_input.placeholder ="Expected Format:[id_no], [id_no2]..."
     else:
         entered_points.value = sg_value
+        Dobs =display_streamflow(sg_value)
+
+    
     
 enter_id = pn.panel(pn.widgets.Button(name='Enter', button_type='primary'))
 
@@ -256,12 +263,13 @@ def display_points(state_list:list,ids:str, data_set:str)->gv.Points:
         filt_points = filt_points[(filt_points[data_set]==1).all(axis=1)] 
     
     selected_points = gv.Points(filt_points).opts(**plot_opts,color='lightgreen', size=5)
-
+    tap.source = selected_points
 
     return selected_points
 
 # create a pn.rx() to allow Panel to link state_selector with a Geoviews(Holoviews under the hood) object
 # replaces @pn.depends
+
 if streamgage_input.value == '':
     displayed_points =pn.rx(display_points)(state_selector,streamgage_input,subset_selector)
 else:
@@ -286,20 +294,89 @@ def reset_map(event:bool)-> None:
 # Template Setup 
 clear_map = pn.panel(pn.widgets.Button(name='Reset Map', button_type='primary'))
 pn.bind(reset_map, clear_map, watch=True)
-footer = pn.pane.Markdown("""For questions about this application, please visit the [Hytest Repo](https://github.com/hytest-org/hytest/issues)""" ,width=500, height =20)
+footer = pn.pane.Markdown('''For questions about this application, please visit the [Hytest Repo](https://github.com/hytest-org/hytest/issues)''' ,width=500, height =20)
 
+map_modifier = pn.Column(state_selector, map_selector, subset_selector,streamgage_input, pn.Row(enter_id, clear_map), start_date, end_date,sizing_mode='stretch_width')
 
-map_modifier = pn.Column(state_selector, map_selector, subset_selector, streamgage_input, enter_id, clear_map, start_date, end_date,sizing_mode='stretch_width')
 
 model_eval = pn.template.FastGridTemplate(
     title="HyTEST Model Evaluation",  
      sidebar=[
         map_modifier,
     ],
+    accent_base_color ="#92ED84",
+    theme = "dark",
+    header_background = "#92ED84"
 )
 
-
 subset_selector.param.watch(display_points, 'value')
-model_eval.main[0:5, 0:12] = pn.pane.HoloViews(displayed_map * displayed_states * displayed_points) # unpack us map onto model_eval
+not_available = pn.pane.Alert('Cannot display please select a point', alert_type ='info')
+gray = '''
+<style>
+.gray{
+    color: #ccc;
+    background: color #cacaca;
+    pointer-events: none;
+}
+</style>
+'''
+not_available = pn.pane.Markdown(
+    gray + '<div class ="gray"> Not available </div>',
+    sizing_mode = 'stretch_width'
+)
+popup = pn.pane.Markdown(sizing_mode='stretch_width')
+def tap_info(x,y):
+    '''
+    Retrieves and displays information about a stream gage based on the provided coordinates.
+
+    Args:
+        x (float): The x-coordinate (longitude) of the point of interest.
+        y (float): The y-coordinate (latitude) of the point of interest.
+
+    Returns:
+        None: This function does not return a value but may display information about the stream gage.
+    '''
+    site_no = site_finder(y,x, stream_gage)
+    return show_stream_box(site_no)
+
+def site_finder(x,y, data):
+    '''
+    Finds the nearest site number based on the provided coordinates and the given geospatial data.
+
+    Args:
+        x (float): The x-coordinate (longitude) of the point to find the nearest site.
+        y (float): The y-coordinate (latitude) of the point to find the nearest site.
+        data (gpd.GeoDataFrame): A GeoDataFrame containing the geometries and site numbers.
+
+    Returns:
+        str: The site number of the nearest site found in the data.
+    '''
+    point = gpd.GeoSeries([gpd.points_from_xy([x],[y])[0]], crs = "EPSG:4326")
+    distances = data.geometry.apply(lambda p: p.distance(point))
+    idx = distances.idxmin()
+    print(x,y)
+    print(data.iloc[idx]['site_no'])
+    point = data.iloc[idx]['site_no']
+    return data.iloc[idx]['site_no']
+
+
+def show_stream_box(site_no: str) -> hv.Curve:
+    '''
+    Displays a streamflow curve for the specified site number.
+
+    Args:
+        site_no (str): The site number for which to display the streamflow data.
+
+    Returns:
+        hv.Curve: A HoloViews Curve object representing the streamflow data for the specified site.
+    '''
+    data = display_streamflow(site_no)
+    return hv.Curve(data, kdims='date', vdims='streamflow', label=f'Site: {site_no}')
+tap = hv.streams.SingleTap(source = display_points, x =0, y= 0)
+
+
+tap_map = hv.DynamicMap(tap_info, streams=[tap])
+initial_load = pn.Tabs(pn.pane.HoloViews(displayed_map * displayed_states * displayed_points*tap_map),not_available)
+model_eval.main[0:5, 0:12] = initial_load # unpack us map onto model_eval
 model_eval.main[5:6, 0:12] = footer # unpack footer onto model_eval
 model_eval.servable() 
