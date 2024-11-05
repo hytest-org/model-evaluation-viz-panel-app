@@ -79,9 +79,7 @@ model_eval = pn.template.MaterialTemplate(
     ],
     main=[map.view, flow.view],
 )
-print(type(flow.param.site_id))
-flow.param.site_id= '01021480'
-
+flow.param.site_ids.objects = ['01021480','01021470']
 # model_eval = pn.template.FastGridTemplate(
 #     title="HyTEST Model Evaluation",
 #     sidebar=[
