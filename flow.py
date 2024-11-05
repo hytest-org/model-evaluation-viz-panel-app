@@ -24,7 +24,7 @@ flow_plot_opts = dict(
 class FlowPlot(param.Parameterized):
     """Instantiate flow map """
     flow_data = param.DataFrame(precedence=-1)
-    site_id = param.String(default='', label = "Selected Site ID")
+    site_ids = param.ListSelector(default=[], label = "Selected Site ID")
     start_date = param.Date(default =  dt.datetime(2020,1,1) ,label = "Start Date")
     end_date = param.Date(default =  dt.datetime(2020,1,10),label = "End Date")
 
@@ -37,22 +37,22 @@ class FlowPlot(param.Parameterized):
         '''
         super().__init__(**params)
 
-    def getflow(self, site_id, dates)-> any:
+    def getflow(self, site_ids, dates)-> any:
         '''
         Fetches the streamflow data for a given site ID and date range.
 
         Args:
-            site_id (str): The site ID for which to fetch streamflow data.
+            site_ids (str): The site ID for which to fetch streamflow data.
             dates (Tuple[str, str]): A tuple containing the start and end dates.
 
         Returns:
             Any: The streamflow data retrieved from NWIS.
         '''
         nwis = NWIS()
-        data = nwis.get_streamflow(site_id, dates)
+        data = nwis.get_streamflow(site_ids, dates)
         return data
     
-    @param.depends("site_id", "start_date", "end_date", watch = True)
+    @param.depends("site_ids", "start_date", "end_date", watch = True)
     def update_flow_data(self) -> None:
         '''
         Updates flow data when site ID or date range changes.
@@ -63,7 +63,7 @@ class FlowPlot(param.Parameterized):
         start_date = self.start_date
         end_date = self.end_date
         dates = (start_date, end_date)
-        id = self.site_id
+        id = self.site_ids
         dates = (start_date, end_date)
         self.flow_data = self.getflow(id, dates)
 
@@ -95,4 +95,9 @@ class FlowPlot(param.Parameterized):
             pn.pane.HoloViews: A Panel object containing the streamflow plot.
         '''
         return pn.pane.HoloViews(self.plot_streamflow(), sizing_mode = 'stretch_width')
-    
+# flow = FlowPlot()
+
+# flow.param.site_ids.objects = ['01021480','01021470']
+# pn.Row(flow.param,
+# flow.view
+# ).servable()
