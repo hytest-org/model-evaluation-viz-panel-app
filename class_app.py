@@ -7,6 +7,8 @@ import panel as pn
 from config import EX_STATES
 from map import Map
 from flow import FlowPlot
+from holoviews.streams import Selection1D
+
 pn.extension(notifications=True)
 hv.extension("bokeh")
 
@@ -66,10 +68,17 @@ streamgage_data = _get_streamgage_data(streamgages_path)
 map = Map(states = states_data, streamgages = streamgage_data)
 flow = FlowPlot()
 
+def tap_handler(event):
+    index = event.index
+    if index:
+        site_id = map.streamgages.iloc[index]['site_no']
+        print("SiteID"+site_id)
+        flow.set_site_id(site_id)
+
+map.stream.param.watch(tap_handler, ['x','y'])
 ### WIDGET OPTIONS  # noqa: E266
 
 # tap_map = hv.DynamicMap(show_flow_plot, streams=[map.stream])
-flow = FlowPlot()
 # flow.plot_streamflow()
 map.param.state_select.objects = states_list
 model_eval = pn.template.MaterialTemplate(
