@@ -55,7 +55,7 @@ class Map(param.Parameterized):
         return _states
 
     @param.depends("basemap_select")
-    def display_basemap(self) -> gv.TileSource:
+    def display_basemap(self):
         '''
         Display the selected basemap.
 
@@ -87,6 +87,7 @@ class Map(param.Parameterized):
                 streamgages_to_display = (streamgages_to_display.clip(self.states[self.states['shapeName'].isin(self.state_select)]))
 
         site_gage = gv.Points(streamgages_to_display).options(
+            tools=['hover','tap'],
             cmap="Plasma",  # stand in and will be changed later
             color="complete_yrs",  # stand in and will be changed later
             size=5)  # stand in and will be changed later
@@ -136,7 +137,7 @@ class Map(param.Parameterized):
         '''
         Resets all parameters to their default values except for a few specified parameters. 
         This method iterates through all parameters and resets those that are not explicitly excluded.
-
+        
         Returns:
             None
         '''
