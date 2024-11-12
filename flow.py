@@ -28,6 +28,10 @@ class FlowPlot(param.Parameterized):
     start_date = param.Date(default =  dt.datetime(2020,1,1) ,label = "Start Date")
     end_date = param.Date(default =  dt.datetime(2020,1,10),label = "End Date")
 
+    def set_site_id(self, site_id):
+        self.site_ids = [site_id]
+        self.update_flow_data()
+
     def __init__(self, **params)-> None:
         '''
         Initializes the class with given parameters.
@@ -64,6 +68,7 @@ class FlowPlot(param.Parameterized):
         end_date = self.end_date
         dates = (start_date, end_date)
         id = self.site_ids
+        print(id)
         dates = (start_date, end_date)
         self.flow_data = self.getflow(id, dates)
 
