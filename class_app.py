@@ -3,7 +3,7 @@ import geoviews as gv
 import holoviews as hv
 import pandas as pd
 import panel as pn
-
+import intake
 from config import EX_STATES
 from map import Map
 from flow import FlowPlot
@@ -11,6 +11,10 @@ from holoviews.streams import Selection1D
 
 pn.extension(notifications=True)
 hv.extension("bokeh")
+# hytest_cat = intake.open_catalog("https://raw.githubusercontent.com/hytest-org/hytest/main/dataset_catalog/hytest_intake_catalog.yml")
+# catalog = hytest_cat['benchmarks-catalog']['streamflow-benchmarks-catalog']
+# dataset = 'nhmv1-standardsuite-osn'
+# conus404 = catalog[dataset].to_dask()
 
 # notifications
 pn.state.notifications.position = 'top-center'
@@ -70,6 +74,9 @@ flow = FlowPlot()
 
 def tap_handler(event):
     index = event.index
+    print("Y"+event.y)
+    print("X"+event.x)
+
     if index:
         site_id = map.streamgages.iloc[index]['site_no']
         print("SiteID"+site_id)
@@ -98,4 +105,5 @@ flow.param.site_ids.objects = ['01021480','01021470']
 # )
 
 # model_eval.main.append(map.view)
+# print(dataset)
 model_eval.servable()
