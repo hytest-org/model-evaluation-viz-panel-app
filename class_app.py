@@ -67,9 +67,9 @@ def _get_streamgage_data(_filepath: str) -> gpd.GeoDataFrame:
 streamgage_data = _get_streamgage_data(streamgages_path)
 
 class class_Mediator:
-    def __init__(self, map, flow):
-        self.map = map
-        self.flow = flow
+    def __init__(self, map_inst, flow_inst):
+        self.map = map_inst
+        self.flow = flow_inst
         self.map.stream.param.watch(self.handle_tap, 'index')
 
     def handle_tap(self, event):
@@ -82,18 +82,18 @@ class class_Mediator:
 
 
 
-map = Map(states = states_data, streamgages = streamgage_data)
-flow = FlowPlot()
-mediate = class_Mediator(map,flow)
+map_inst = Map(states = states_data, streamgages = streamgage_data)
+flow_inst = FlowPlot()
+mediate = class_Mediator(map_inst,flow_inst)
 ### WIDGET OPTIONS  # noqa: E266
 
-map.param.state_select.objects = states_list
+map_inst.param.state_select.objects = states_list
 model_eval = pn.template.MaterialTemplate(
     title="HyTEST Model Evaluation",
     sidebar=[
-        map.param, flow.param.start_date, flow.param.end_date
+        map_inst.param, flow_inst.param.start_date, flow_inst.param.end_date
     ],
-    main=[map.view, flow.view],
+    main=[map_inst.view, flow_inst.view],
 )
 
 
