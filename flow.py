@@ -100,9 +100,3 @@ class FlowPlot(param.Parameterized):
             pn.pane.HoloViews: A Panel object containing the streamflow plot.
         '''
         return pn.pane.HoloViews(self.plot_streamflow(), sizing_mode = 'stretch_width')
-# flow = FlowPlot()
-
-# flow.param.site_ids.objects = ['01021480','01021470']
-# pn.Row(flow.param,
-# flow.view
-# ).servable()
