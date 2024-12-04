@@ -65,17 +65,33 @@ def _get_streamgage_data(_filepath: str) -> gpd.GeoDataFrame:
     return filtered_gdf
 
 streamgage_data = _get_streamgage_data(streamgages_path)
+
+class class_Mediator:
+    def __init__(self, map, flow):
+        self.map = map
+        self.flow = flow
+        self.map.stream.param.watch(self.handle_tap, 'index')
+
+    def handle_tap(self, event):
+        if event.new: 
+            selected_index = event.new[0]
+            site_no = self.map.streamgages.iloc[selected_index]['site_no']
+            print(f"Selected {site_no}")
+            self.flow.set_site_id(site_no)
+
+
+
+
 map = Map(states = states_data, streamgages = streamgage_data)
 flow = FlowPlot()
-
-
+mediate = class_Mediator(map,flow)
 ### WIDGET OPTIONS  # noqa: E266
 
 map.param.state_select.objects = states_list
 model_eval = pn.template.MaterialTemplate(
     title="HyTEST Model Evaluation",
     sidebar=[
-        map.param, flow.param
+        map.param, flow.param.start_date, flow.param.end_date
     ],
     main=[map.view, flow.view],
 )
