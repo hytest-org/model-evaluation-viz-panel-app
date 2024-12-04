@@ -24,7 +24,7 @@ flow_plot_opts = dict(
 class FlowPlot(param.Parameterized):
     """Instantiate flow map """
     flow_data = param.DataFrame(precedence=-1)
-    site_ids = param.String(default=None)
+    site_no = param.String(default=None)
     start_date = param.Date(default =  dt.datetime(2020,1,1) ,label = "Start Date")
     end_date = param.Date(default =  dt.datetime(2020,1,10),label = "End Date")
 
@@ -40,27 +40,33 @@ class FlowPlot(param.Parameterized):
         self.nwis = NWIS()
 
 
-    def getflow(self, site_ids, dates)-> any:
+    def getflow(self, site_no, dates)-> any:
         '''
         Fetches the streamflow data for a given site ID and date range.
 
         Args:
-            site_ids (str): The site ID for which to fetch streamflow data.
+            site_no (str): The site ID for which to fetch streamflow data.
             dates (Tuple[str, str]): A tuple containing the start and end dates.
 
         Returns:
             Any: The streamflow data retrieved from NWIS.
         '''
         # nwis = NWIS()
-        data = self.nwis.get_streamflow(site_ids, dates)
-        return data
+        if not site_no:
+            print("No site_no Provided")
+            return pd.DataFrame()
+        try:
+            return self.nwis.get_streamflow(site_no, dates)
+        except Exception as e:
+            print(f"error:{e}")
+            return pd.DataFrame()
     
     def set_site_id(self, site_id):
-        self.site_ids = [site_id]
+        self.site_no = [site_id]
         self.update_flow_data()
 
    
-    @param.depends("site_ids", "start_date", "end_date", watch = True)
+    @param.depends("site_no", "start_date", "end_date", watch = True)
     def update_flow_data(self) -> None:
         '''
         Updates flow data when site ID or date range changes.
@@ -68,13 +74,14 @@ class FlowPlot(param.Parameterized):
         Returns:
             None: This method updates the flow_data attribute but does not return a value.
         '''
-        start_date = self.start_date
-        end_date = self.end_date
-        dates = (start_date, end_date)
-        id = self.site_ids
-        print(id)
-        dates = (start_date, end_date)
-        self.flow_data = self.getflow(id, dates)
+        # start_date = self.start_date
+        # end_date = self.end_date
+        if self.site_no:
+            dates = (self.start_date, self.end_date)
+            self.flow_data = self.getflow(self.site_no, dates)
+        else: 
+            self.flow_data = pd.DataFrame()
+        
 
     
     @param.depends("flow_data", watch = True)
@@ -88,12 +95,13 @@ class FlowPlot(param.Parameterized):
         if self.flow_data is None or self.flow_data.empty:
             return hv.Curve([]).opts(**flow_plot_opts)
 
-        curves = []
-        for column in self.flow_data.columns:
-            curve = hv.Curve(self.flow_data[column]).opts(title=f"Streamflow for {column}", xlabel='Date', ylabel='Flow Value')
-            curves.append(curve)
+   
+        x_axis = self.flow_data.index
+        y_axis = self.flow_data.iloc[:, 0]
+        
+        flow_line = hv.curve((x_axis, y_axis), label =f"Streamflow for {self.site_no}").opts(**flow_plot_opts)
 
-        return hv.Overlay(curves).opts(legend_position='right')
+        return hv.Overlay(flow_line).opts(legend_position='right')
 
     @param.depends("plot_streamflow")
     def view(self) -> pn.pane.HoloViews:
