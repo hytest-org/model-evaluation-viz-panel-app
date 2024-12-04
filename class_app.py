@@ -3,7 +3,6 @@ import geoviews as gv
 import holoviews as hv
 import pandas as pd
 import panel as pn
-import intake
 from config import EX_STATES
 from map import Map
 from flow import FlowPlot
