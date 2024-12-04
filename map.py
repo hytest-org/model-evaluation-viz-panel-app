@@ -4,6 +4,7 @@ import holoviews as hv
 import geoviews as gv
 import panel as pn
 import param
+from holoviews.streams import Selection1D
 
 from config import STREAMGAGE_SUBSET
 
