@@ -24,14 +24,11 @@ flow_plot_opts = dict(
 class FlowPlot(param.Parameterized):
     """Instantiate flow map """
     flow_data = param.DataFrame(precedence=-1)
-    site_ids = param.ListSelector(default=[], label = "Selected Site ID")
+    site_ids = param.String(default=None)
     start_date = param.Date(default =  dt.datetime(2020,1,1) ,label = "Start Date")
     end_date = param.Date(default =  dt.datetime(2020,1,10),label = "End Date")
 
-    def set_site_id(self, site_id):
-        self.site_ids = [site_id]
-        self.update_flow_data()
-
+    
     def __init__(self, **params)-> None:
         '''
         Initializes the class with given parameters.
@@ -40,6 +37,8 @@ class FlowPlot(param.Parameterized):
             **params: Keyword arguments for parameter initialization.
         '''
         super().__init__(**params)
+        self.nwis = NWIS()
+
 
     def getflow(self, site_ids, dates)-> any:
         '''
@@ -52,10 +51,15 @@ class FlowPlot(param.Parameterized):
         Returns:
             Any: The streamflow data retrieved from NWIS.
         '''
-        nwis = NWIS()
-        data = nwis.get_streamflow(site_ids, dates)
+        # nwis = NWIS()
+        data = self.nwis.get_streamflow(site_ids, dates)
         return data
     
+    def set_site_id(self, site_id):
+        self.site_ids = [site_id]
+        self.update_flow_data()
+
+   
     @param.depends("site_ids", "start_date", "end_date", watch = True)
     def update_flow_data(self) -> None:
         '''
