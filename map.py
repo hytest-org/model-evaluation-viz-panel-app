@@ -40,6 +40,7 @@ class Map(param.Parameterized):
             **params: Keyword arguments for parameter initialization.
         '''
         super().__init__(**params)
+        self.stream = Selection1D(source=None)
 
     @param.depends("state_select")
     def display_states(self) -> gv.Polygons:
@@ -87,13 +88,13 @@ class Map(param.Parameterized):
             if len(self.state_select) > 0:
                 streamgages_to_display = (streamgages_to_display.clip(self.states[self.states['shapeName'].isin(self.state_select)]))
 
-        site_gage = gv.Points(streamgages_to_display).options(
+        site_gages = gv.Points(streamgages_to_display).options(
             tools=['hover','tap'],
             cmap="Plasma",  # stand in and will be changed later
             color="complete_yrs",  # stand in and will be changed later
             size=5)  # stand in and will be changed later
-        self.stream.source = site_gage
-        return site_gage
+        self.stream.source = site_gages
+        return site_gages
     
     @param.depends("display_states", "display_basemap", "display_streamgages")
     def view(self) -> pn.pane.HoloViews:
