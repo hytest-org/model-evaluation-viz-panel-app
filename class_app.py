@@ -11,10 +11,6 @@ from holoviews.streams import Selection1D
 
 pn.extension(notifications=True)
 hv.extension("bokeh")
-# hytest_cat = intake.open_catalog("https://raw.githubusercontent.com/hytest-org/hytest/main/dataset_catalog/hytest_intake_catalog.yml")
-# catalog = hytest_cat['benchmarks-catalog']['streamflow-benchmarks-catalog']
-# dataset = 'nhmv1-standardsuite-osn'
-# conus404 = catalog[dataset].to_dask()
 
 # notifications
 pn.state.notifications.position = 'top-center'
@@ -72,21 +68,9 @@ streamgage_data = _get_streamgage_data(streamgages_path)
 map = Map(states = states_data, streamgages = streamgage_data)
 flow = FlowPlot()
 
-def tap_handler(event):
-    index = event.index
-    print("Y"+event.y)
-    print("X"+event.x)
 
-    if index:
-        site_id = map.streamgages.iloc[index]['site_no']
-        print("SiteID"+site_id)
-        flow.set_site_id(site_id)
-
-map.stream.param.watch(tap_handler, ['x','y'])
 ### WIDGET OPTIONS  # noqa: E266
 
-# tap_map = hv.DynamicMap(show_flow_plot, streams=[map.stream])
-# flow.plot_streamflow()
 map.param.state_select.objects = states_list
 model_eval = pn.template.MaterialTemplate(
     title="HyTEST Model Evaluation",
@@ -95,15 +79,8 @@ model_eval = pn.template.MaterialTemplate(
     ],
     main=[map.view, flow.view],
 )
-flow.param.site_ids.objects = ['01021480','01021470']
-# model_eval = pn.template.FastGridTemplate(
-#     title="HyTEST Model Evaluation",
-#     sidebar=[
-#         map.param,
-#     ],
-#     # main=[pn.pane.HoloViews(map.view)],
-# )
 
-# model_eval.main.append(map.view)
-# print(dataset)
+
+
+
 model_eval.servable()
