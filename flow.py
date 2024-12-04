@@ -15,7 +15,7 @@ nest_asyncio.apply()
 #Plotting ops 1/4 the size of the map
 flow_plot_opts = dict(
     width=300,
-    height=150,
+    height=300,
     title='Flow Plot',
     xaxis=None,
     yaxis=None
@@ -62,7 +62,7 @@ class FlowPlot(param.Parameterized):
             return pd.DataFrame()
     
     def set_site_id(self, site_id):
-        self.site_no = [site_id]
+        self.site_no = site_id
         self.update_flow_data()
 
    
@@ -99,11 +99,11 @@ class FlowPlot(param.Parameterized):
         x_axis = self.flow_data.index
         y_axis = self.flow_data.iloc[:, 0]
         
-        flow_line = hv.curve((x_axis, y_axis), label =f"Streamflow for {self.site_no}").opts(**flow_plot_opts)
+        flow_line = hv.Curve((x_axis, y_axis), label =f"Streamflow for {self.site_no}").opts(**flow_plot_opts)
 
         return hv.Overlay(flow_line).opts(legend_position='right')
 
-    @param.depends("plot_streamflow")
+    # @param.depends("plot_streamflow")
     def view(self) -> pn.pane.HoloViews:
         '''
         Returns a Panel that displays the streamflow plot.
