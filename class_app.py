@@ -35,10 +35,8 @@ def _get_state_data(_filepath: str) -> tuple[gpd.GeoDataFrame, list]:
     # create 
     _states = gpd.read_file(_filepath)
     _states = _states[~_states['shapeName'].isin(EX_STATES)]
-
     _states_list = list(_states['shapeName'].unique())
     _states_list.sort()
-
     return _states, _states_list
 
 states_data, states_list = _get_state_data(states_path)
@@ -65,37 +63,34 @@ def _get_streamgage_data(_filepath: str) -> gpd.GeoDataFrame:
 
 streamgage_data = _get_streamgage_data(streamgages_path)
 
-class class_Mediator:
+class Mediator:
     def __init__(self, map_inst, flow_inst):
         self.map = map_inst
         self.flow = flow_inst
         self.map.stream.param.watch(self.handle_tap, 'index')
+        print(f"Watching: {self.map.stream.param.watchers}")
+        self.map.stream.param.watch(self.test_tap, 'index')
 
+    def test_tap(self, event):
+        print(f"Tap event triggered with data:{event.new}")    
     def handle_tap(self, event):
         if event.new: 
             selected_index = event.new[0]
+            print(f"Tapped Index: {selected_index}")
             site_no = self.map.streamgages.iloc[selected_index]['site_no']
             print(f"Selected {site_no}")
             self.flow.set_site_id(site_no)
 
-
-
-
 map_inst = Map(states = states_data, streamgages = streamgage_data)
 flow_inst = FlowPlot()
-mediate = class_Mediator(map_inst,flow_inst)
+mediator = Mediator(map_inst,flow_inst)
 ### WIDGET OPTIONS  # noqa: E266
 
 map_inst.param.state_select.objects = states_list
 model_eval = pn.template.MaterialTemplate(
     title="HyTEST Model Evaluation",
     sidebar=[
-        map_inst.param, flow_inst.param.start_date, flow_inst.param.end_date
-    ],
+        map_inst.param, flow_inst.param.start_date, flow_inst.param.end_date],
     main=[map_inst.view, flow_inst.view],
 )
-
-
-
-
 model_eval.servable()
