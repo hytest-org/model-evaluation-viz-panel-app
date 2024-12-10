@@ -15,10 +15,10 @@ nest_asyncio.apply()
 #Plotting ops 1/4 the size of the map
 flow_plot_opts = dict(
     width=300,
-    height=300,
+    height=150,
     title='Flow Plot',
-    xaxis=None,
-    yaxis=None
+    xlabel='Date',
+    ylabel='Flow',
 )
 
 class FlowPlot(param.Parameterized):
@@ -84,8 +84,8 @@ class FlowPlot(param.Parameterized):
         
 
     
-    @param.depends("flow_data", watch = True)
-    def plot_streamflow(self)-> hv.Overlay:
+    @param.depends("flow_data")
+    def plot_streamflow(self):
         '''
         Plots the streamflow data if available.
 
@@ -101,7 +101,7 @@ class FlowPlot(param.Parameterized):
         
         flow_line = hv.Curve((x_axis, y_axis), label =f"Streamflow for {self.site_no}").opts(**flow_plot_opts)
 
-        return hv.Overlay(flow_line).opts(legend_position='right')
+        return flow_line
 
     # @param.depends("plot_streamflow")
     def view(self) -> pn.pane.HoloViews:
@@ -111,4 +111,4 @@ class FlowPlot(param.Parameterized):
         Returns:
             pn.pane.HoloViews: A Panel object containing the streamflow plot.
         '''
-        return pn.pane.HoloViews(self.plot_streamflow(), sizing_mode = 'stretch_width')
+        return pn.pane.HoloViews(self.plot_streamflow(), sizing_mode = "stretch_width")
