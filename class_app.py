@@ -3,10 +3,11 @@ import geoviews as gv
 import holoviews as hv
 import pandas as pd
 import panel as pn
-
 from config import EX_STATES
 from map import Map
 from flow import FlowPlot
+from holoviews.streams import Selection1D
+
 pn.extension(notifications=True)
 hv.extension("bokeh")
 
@@ -34,10 +35,8 @@ def _get_state_data(_filepath: str) -> tuple[gpd.GeoDataFrame, list]:
     # create 
     _states = gpd.read_file(_filepath)
     _states = _states[~_states['shapeName'].isin(EX_STATES)]
-
     _states_list = list(_states['shapeName'].unique())
     _states_list.sort()
-
     return _states, _states_list
 
 states_data, states_list = _get_state_data(states_path)
@@ -63,30 +62,35 @@ def _get_streamgage_data(_filepath: str) -> gpd.GeoDataFrame:
     return filtered_gdf
 
 streamgage_data = _get_streamgage_data(streamgages_path)
-map = Map(states = states_data, streamgages = streamgage_data)
-flow = FlowPlot()
 
+class Mediator:
+    def __init__(self, map_inst, flow_inst):
+        self.map = map_inst
+        self.flow = flow_inst
+        self.map.stream.param.watch(self.handle_tap, 'index')
+        print(f"Watching: {self.map.stream.param.watchers}")
+        self.map.stream.param.watch(self.test_tap, 'index')
+
+    def test_tap(self, event):
+        print(f"Tap event triggered with data:{event.new}")    
+    def handle_tap(self, event):
+        if event.new: 
+            selected_index = event.new[0]
+            print(f"Tapped Index: {selected_index}")
+            site_no = self.map.streamgages.iloc[selected_index]['site_no']
+            print(f"Selected {site_no}")
+            self.flow.set_site_id(site_no)
+
+map_inst = Map(states = states_data, streamgages = streamgage_data)
+flow_inst = FlowPlot()
+mediator = Mediator(map_inst,flow_inst)
 ### WIDGET OPTIONS  # noqa: E266
 
-# tap_map = hv.DynamicMap(show_flow_plot, streams=[map.stream])
-flow = FlowPlot()
-# flow.plot_streamflow()
-map.param.state_select.objects = states_list
+map_inst.param.state_select.objects = states_list
 model_eval = pn.template.MaterialTemplate(
     title="HyTEST Model Evaluation",
     sidebar=[
-        map.param, flow.param
-    ],
-    main=[map.view, flow.view],
+        map_inst.param, flow_inst.param.start_date, flow_inst.param.end_date],
+    main=[map_inst.view, flow_inst.view],
 )
-flow.param.site_ids.objects = ['01021480','01021470']
-# model_eval = pn.template.FastGridTemplate(
-#     title="HyTEST Model Evaluation",
-#     sidebar=[
-#         map.param,
-#     ],
-#     # main=[pn.pane.HoloViews(map.view)],
-# )
-
-# model_eval.main.append(map.view)
 model_eval.servable()
