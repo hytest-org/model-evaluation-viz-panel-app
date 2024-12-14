@@ -4,7 +4,10 @@ import geoviews as gv
 import panel as pn
 import param
 from holoviews.streams import Selection1D
+from bokeh.plotting import figure, output_file, save
+from bokeh.io import export_png
 from config import STREAMGAGE_SUBSET
+import hvplot.pandas 
 
 
 ### Plot Options
@@ -43,6 +46,9 @@ class Map(param.Parameterized):
         super().__init__(**params)
         self.stream = Selection1D(source=None)
 
+
+
+  
 
     @param.depends("state_select")
     def display_states(self) -> gv.Polygons:
@@ -170,3 +176,7 @@ class Map(param.Parameterized):
             if par not in ["name", "streamgages", "states", "search_streamgage_id_input", "clear_streamgage_id_input", "reset_map"]:
                 setattr(self, par, self.param[par].default)
 
+    def export_to_png(self):
+        plot = self.view()
+        hv.save(plot.object, 'map_plot.png', fmt = 'png')
+        pn.state.notifications.info("The map has been exported to a png", duration=5000)
