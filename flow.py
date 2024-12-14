@@ -8,8 +8,10 @@ import panel as pn
 import param
 import datetime as dt
 from datetime import timedelta
-
+import hvplot.pandas 
 import nest_asyncio
+from bokeh.plotting import figure, output_file, save
+from bokeh.io import export_png
 nest_asyncio.apply()
 
 #Plotting ops 1/4 the size of the map
@@ -112,3 +114,8 @@ class FlowPlot(param.Parameterized):
             pn.pane.HoloViews: A Panel object containing the streamflow plot.
         '''
         return pn.pane.HoloViews(self.plot_streamflow(), sizing_mode = "stretch_width")
+    @pn.depends('plot_streamflow')
+    def export_to_png(self):
+        plot = self.plot_streamflow()
+        hv.save(plot, 'flow_plot.png', fmt = 'png')
+        pn.state.notifications.info("The flow plot has been exported to a png", duration=5000)
