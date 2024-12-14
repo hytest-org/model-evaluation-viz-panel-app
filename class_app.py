@@ -86,11 +86,16 @@ flow_inst = FlowPlot()
 mediator = Mediator(map_inst,flow_inst)
 ### WIDGET OPTIONS  # noqa: E266
 
+export_flow_button = pn.widgets.Button(name = "📈  Export the flow plot to image")
+export_flow_button.on_click(lambda event: flow_inst.export_to_png())
+
+export_map_button = pn.widgets.Button(name = "🖼️ Export map to image")
+export_map_button.on_click(lambda event: map_inst.export_to_png())
 map_inst.param.state_select.objects = states_list
 model_eval = pn.template.MaterialTemplate(
     title="HyTEST Model Evaluation",
     sidebar=[
-        map_inst.param, flow_inst.param.start_date, flow_inst.param.end_date],
+        map_inst.param, flow_inst.param.start_date, flow_inst.param.end_date, export_flow_button, export_map_button],
     main=[map_inst.view, flow_inst.view],
 )
 model_eval.servable()
