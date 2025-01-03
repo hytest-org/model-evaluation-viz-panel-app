@@ -16,8 +16,8 @@ nest_asyncio.apply()
 
 #Plotting ops 1/4 the size of the map
 flow_plot_opts = dict(
-    width=300,
-    height=150,
+    width=400,
+    height=400,
     title='Flow Plot',
     xlabel='Date',
     ylabel='Flow',
@@ -26,6 +26,7 @@ flow_plot_opts = dict(
 class FlowPlot(param.Parameterized):
     """Instantiate flow map """
     flow_data = param.DataFrame(precedence=-1)
+    more_flow_data = param.DataFrame(precedence=-1)
     site_no = param.String(default=None)
     start_date = param.Date(default =  dt.datetime(2020,1,1) ,label = "Start Date")
     end_date = param.Date(default =  dt.datetime(2020,1,10),label = "End Date")
@@ -81,12 +82,18 @@ class FlowPlot(param.Parameterized):
         if self.site_no:
             dates = (self.start_date, self.end_date)
             self.flow_data = self.getflow(self.site_no, dates)
+            self.more_flow_data = pd.DataFrame({
+                "Date": pd.date_range(start=self.start_date, end = self.end_date),
+                "Flow": [i * 10 for i in range((self.end_date - self.start_date).days + 1)],
+            }).set_index("Date")
         else: 
             self.flow_data = pd.DataFrame()
+            self.more_flow_data = pd.DataFrame()
+
         
 
     
-    @param.depends("flow_data")
+    @param.depends("flow_data","more_flow_data")
     def plot_streamflow(self):
         '''
         Plots the streamflow data if available.
@@ -95,15 +102,18 @@ class FlowPlot(param.Parameterized):
             hv.Overlay: A HoloViews overlay containing the streamflow curves.
         '''
         if self.flow_data is None or self.flow_data.empty:
-            return hv.Curve([]).opts(**flow_plot_opts)
+            flow_line = hv.Curve([]).opts(**flow_plot_opts)
+        else:
+            flow_line = hv.Curve((self.flow_data.index, self.flow_data.iloc[:, 0]), label =f" NWIS Streamflow for {self.site_no}").opts(**flow_plot_opts)
 
-   
-        x_axis = self.flow_data.index
-        y_axis = self.flow_data.iloc[:, 0]
+        if self.more_flow_data is None or self.more_flow_data.empty:
+            second_flow_line = hv.Curve([]).opts(**flow_plot_opts)
+
+        else:    
+            second_flow_line = hv.Curve((self.more_flow_data.index, self.more_flow_data.iloc[:, 0]), label =f" Sample Streamflow for {self.site_no}").opts(**flow_plot_opts)
+
         
-        flow_line = hv.Curve((x_axis, y_axis), label =f"Streamflow for {self.site_no}").opts(**flow_plot_opts)
-
-        return flow_line
+        return flow_line * second_flow_line
 
     # @param.depends("plot_streamflow")
     def view(self) -> pn.pane.HoloViews:
@@ -113,7 +123,7 @@ class FlowPlot(param.Parameterized):
         Returns:
             pn.pane.HoloViews: A Panel object containing the streamflow plot.
         '''
-        return pn.pane.HoloViews(self.plot_streamflow(), sizing_mode = "stretch_width")
+        return pn.pane.HoloViews(self.plot_streamflow())
     @pn.depends('plot_streamflow')
     def export_to_png(self):
         plot = self.plot_streamflow()
